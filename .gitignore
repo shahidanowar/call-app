@@ -37,3 +37,42 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+
+# IDEs and editors
+.idea/
+.dump/
+.vscode/
+
+# Expo/React Native cache
+.expo-shared/
+.expo-packager-cache/
+.expo-cache/
+
+# Build artifacts
+android/app/build/
+ios/build/
+ios/Pods/
+
+# Coverage
+coverage/
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# Logs
+*.log
+
+# Misc
+*.bak
+*.swp
+*.swo
+
+# Environment files
+.env
+
+# NPM logs (all variants)
+npm-debug.log*

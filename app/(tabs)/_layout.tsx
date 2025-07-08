@@ -1,45 +1,124 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
-
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Tabs, useRouter } from 'expo-router';
+import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+    const router = useRouter();
 
-  return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
-  );
+    // LOG OUT
+    const handleLogout = async () => {
+        try {
+            // remove all stored auth-related keys
+            await AsyncStorage.multiRemove(['token', 'user', 'authToken']);
+            router.replace('/login');
+        } catch (error) {
+            console.error('Logout error:', error);
+            Alert.alert('Error logging out');
+        }
+    };
+
+
+    const HeaderRight = () => (
+        <TouchableOpacity onPress={handleLogout} className="mr-4">
+            <View className="flex-row items-center">
+                <Ionicons name="log-out-outline" size={20} color="#018a91" className="mr-2" />
+                <Text className="text-[#018a91] font-semibold text-sm">Logout</Text>
+            </View>
+        </TouchableOpacity>
+    );
+
+
+    const HeaderBackground = () => (
+        <View className="flex-1 bg-white" />
+    );
+
+
+
+    const getScreenOptions = (title, showLogo = false) => ({
+        title,
+        headerTitleAlign: 'left',
+        headerTintColor: '#018a91',
+        headerRight: HeaderRight,
+        headerBackground: HeaderBackground,
+        headerTitle: showLogo ? () => (
+            <View className="flex-row items-center">
+                <Image
+                    source={require('../../assets/images/logo.png')}
+                    className="w-6 h-6 mb-4 mt-4 rounded-lg"
+                    contentFit="contain"
+                />
+
+                <Text className="text-[#018a91] font-semibold text-lg">{title}</Text>
+            </View>
+        ) : undefined,
+        headerTitleStyle: !showLogo ? {
+            fontWeight: '600',
+            fontSize: 18,
+            color: '#018a91',
+        } : undefined,
+        headerShadowVisible: false,
+    });
+
+    return (
+        <Tabs
+            screenOptions={({ route }) => ({
+                tabBarActiveTintColor: '#018a91',
+                tabBarInactiveTintColor: '#9ca3af',
+                tabBarStyle: {
+                    backgroundColor: 'white',
+                    borderTopWidth: 0,
+                    height: 65,
+                    borderTopLeftRadius: 10,
+                    borderTopRightRadius: 10,
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    elevation: 15,
+                    shadowColor: '#018a91',
+                    shadowOffset: { width: 0, height: -2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                },
+                tabBarLabelStyle: {
+                    fontSize: 11,
+                    fontWeight: '500',
+                    marginBottom: 8,
+                },
+                tabBarIconStyle: {
+                    marginTop: 8,
+                },
+                tabBarIcon: ({ color, size, focused }) => {
+                    let iconName;
+
+                    if (route.name === 'home') {
+                        iconName = focused ? 'home' : 'home-outline';
+                    } else if (route.name === 'history') {
+                        iconName = focused ? 'time' : 'time-outline';
+                    } else if (route.name === 'profile') {
+                        iconName = focused ? 'person' : 'person-outline';
+                    }
+
+                    return <Ionicons name={iconName} size={size} color={color} />;
+                },
+            })}
+        >
+            <Tabs.Screen
+                name="home"
+                options={getScreenOptions(' QR Call', true)}
+            />
+
+            <Tabs.Screen
+                name="history"
+                options={getScreenOptions(' Call History', true)}
+            />
+
+            <Tabs.Screen
+                name="profile"
+                options={getScreenOptions(' Profile', true)}
+            />
+
+        </Tabs>
+    );
 }
