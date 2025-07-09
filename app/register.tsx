@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { register } from '../lib/api';
+
 const RegisterScreen = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
@@ -73,12 +75,19 @@ const RegisterScreen = () => {
         if (!validateForm()) return;
 
         setLoading(true);
-        // Mock register: always succeed after a short delay
-        setTimeout(() => {
+        try {
+            const res = await register(formData.fullName, formData.email, formData.password);
             setLoading(false);
-            Alert.alert('Registration successful!');
-            router.replace('/login');
-        }, 700);
+            if (res.success) {
+                Alert.alert('Registration successful!');
+                router.replace('/login');
+            } else {
+                Alert.alert('Registration failed', res.message || 'Could not register');
+            }
+        } catch (err) {
+            setLoading(false);
+            Alert.alert('Registration failed', 'Network or server error');
+        }
     };
 
     const navigateToLogin = () => {

@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { login } from '../lib/api';
+
 const LoginScreen = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
@@ -56,13 +58,20 @@ const LoginScreen = () => {
         if (!validateForm()) return;
 
         setLoading(true);
-        // Mock login: always succeed after a short delay
-        setTimeout(() => {
+        try {
+            const res = await login(formData.email, formData.password);
             setLoading(false);
-            // Save a mock token and navigate
-            AsyncStorage.setItem('token', 'mock-token');
-            router.replace('/(tabs)/profile');
-        }, 700);
+            if (res.success) {
+                await AsyncStorage.setItem('token', res.token);
+                await AsyncStorage.setItem('user', JSON.stringify(res.user));
+                router.replace('/(tabs)/profile');
+            } else {
+                Alert.alert('Login Failed', res.message || 'Invalid credentials');
+            }
+        } catch (err) {
+            setLoading(false);
+            Alert.alert('Login Failed', 'Network or server error');
+        }
     };
 
 
@@ -74,7 +83,6 @@ const LoginScreen = () => {
         // Navigate to forgot password screen or show modal
         alert('Forgot password functionality to be implemented');
     };
-
     return (
         <>
             <StatusBar barStyle="light-content" backgroundColor="#018a91" />
