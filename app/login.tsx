@@ -55,6 +55,7 @@ const LoginScreen = () => {
     };
 
     const handleLogin = async () => {
+    console.log('Login button pressed with:', formData);
         if (!validateForm()) return;
 
         setLoading(true);

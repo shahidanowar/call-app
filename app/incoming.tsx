@@ -11,8 +11,7 @@ interface Params {
 
 export default function IncomingCall() {
   const router = useRouter();
-  // Hard-coded id for demo – in real app fetch from auth/user profile
-  const calleeId = 'user123';
+  
 
   const [callerName, setCallerName] = useState('Caller');
   const [avatar, setAvatar] = useState('https://i.pravatar.cc/300');

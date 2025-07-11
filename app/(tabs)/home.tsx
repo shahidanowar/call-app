@@ -97,7 +97,7 @@ const Home = () => {
                                 <ActionButton
                                     label="Share QR"
                                     onPress={() => {
-                                        router.push('../CallScreen');
+                                        router.push('../ongoing');
                                         console.log('Share clicked');
                                     }}
                                     icon="share"
