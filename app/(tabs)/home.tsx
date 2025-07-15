@@ -2,23 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, Image, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
-import { router } from 'expo-router';
 
-// Ports explanation:
-// 3000 = Node.js signaling server (WebSocket/WSS for signaling)
-// 5173 = Vite dev server (web frontend, serves the React app)
-const CALLEE_ID = 'user123';
-const QR_URL = `https://demo-app/call/${CALLEE_ID}`;
+//-------------------------------------------------------------------------
+import { useRouter } from 'expo-router'; // Navigation hook (push/replace/back) in Expo Router
+
 
 const Home = () => {
+    const router = useRouter();
     const [showQR, setShowQR] = useState(false); // Start with QR hidden
-    const peerRef = useRef<any>(null);
-    const localStreamRef = useRef<any>(null);
-
-    useEffect(() => {
-        // No-op for demo
-        return () => {};
-    }, []);
+    const CALLEE_ID = 'user123';
+    const QR_URL = `https://call-web-five.vercel.app/#/room/shahid`;
 
     const ActionButton = ({
                               label,
@@ -87,7 +80,7 @@ const Home = () => {
                                 <ActionButton
                                     label="Print QR"
                                     onPress={() => {
-                                        router.push('../incoming');
+                                        router.push('../home');
                                         console.log('Print clicked');
                                     }}
                                     icon="print"
@@ -97,7 +90,7 @@ const Home = () => {
                                 <ActionButton
                                     label="Share QR"
                                     onPress={() => {
-                                        router.push('../ongoing');
+                                        router.push('../home');
                                         console.log('Share clicked');
                                     }}
                                     icon="share"

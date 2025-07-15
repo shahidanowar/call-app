@@ -9,14 +9,43 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import useWebRTC from '../lib/useWebRTC';
+import { useWebRTCContext } from '../lib/WebRTCContext';
+import { useLocalSearchParams } from 'expo-router';
 
 const WEB_LINK_PREFIX = 'https://call-web-five.vercel.app/#/room/';
 const FIXED_ROOM_ID = 'shahid';
+const ONGOING_CALL_ID = 'shahid';
 
 const Ongoing = () => {
   const router = useRouter();
+  const { 
+    acceptCall, 
+    makeCall, 
+    hangupCall, 
+    localStream, 
+    remoteStream, 
+    lastOffer 
+  } = useWebRTCContext();
   const [isMuted, setIsMuted] = useState(false);
+  const [joined, setJoined] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (remoteStream) {
+      setIsLoading(false);
+      setJoined(true);
+    }
+  }, [remoteStream]);
+
+  useEffect(() => {
+    // If we have a lastOffer, it means we are the callee and should accept.
+    // Otherwise, we are the caller and should make the call.
+    if (lastOffer) {
+      acceptCall();
+    } else {
+      makeCall();
+    }
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleToggleMute = () => {
     setIsMuted((prev) => {
@@ -32,47 +61,29 @@ const Ongoing = () => {
 
   const [roomId, setRoomId] = useState<string>(FIXED_ROOM_ID);
   const [roomLink, setRoomLink] = useState<string>(`${WEB_LINK_PREFIX}${FIXED_ROOM_ID}`);
-  const [joined, setJoined] = useState(false);
   const [full, setFull] = useState(false);
-
-  const { joinRoom, leaveRoom, isConnected, localStream, remoteStream } = useWebRTC({
-    onRoomFull: () => setFull(true),
-    onJoined: () => setJoined(true),
-    onLeave: () => {
-      // Clean up UI state when remote or self leaves and navigate home
-      setJoined(false);
-      setFull(false);
-      router.replace('/(tabs)/home');
-    },
-  });
-
-  // Dummy to satisfy potential references in commented JSX
-  const handleCreateRoom = () => {};
 
   const handleHangup = () => {
     // initiate clean-up; onLeave callback above handles UI state
-    leaveRoom();
-    router.back();
+    hangupCall();
+    router.navigate('/home');
   };
 
   const [callDuration, setCallDuration] = useState(0);
 
-  // Join fixed room once socket connection is established
-  useEffect(() => {
-    if (isConnected) {
-      joinRoom(FIXED_ROOM_ID);
-    }
-  }, [isConnected]);
-
   // Call duration timer
   useEffect(() => {
-    let interval: NodeJS.Timer;
+    let interval: NodeJS.Timeout | undefined;
     if (joined) {
-      interval = setInterval(() => setCallDuration((prev) => prev + 1), 1000);
+      interval = setInterval(() => setCallDuration((prev) => prev + 1), 1000) as unknown as NodeJS.Timeout;
     } else {
       setCallDuration(0);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [joined]);
 
   const formatDuration = (seconds: number) => {
@@ -138,10 +149,10 @@ const Ongoing = () => {
           </View>
         )}
 
-        {!isConnected && (
+        {(isLoading || !localStream) && (
           <View className="absolute top-0 left-0 right-0 bottom-0 bg-black/70 justify-center items-center">
             <ActivityIndicator size="large" color="#fff"/>
-            <Text className="text-white mt-4">Connecting to Server...</Text>
+            <Text className="text-white mt-4">{isLoading ? 'Loading...' : 'Connecting to Server...'}</Text>
           </View>
         )}
       </View>
