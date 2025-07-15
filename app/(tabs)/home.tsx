@@ -4,14 +4,16 @@ import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 
 //-------------------------------------------------------------------------
-import { useRouter } from 'expo-router'; // Navigation hook (push/replace/back) in Expo Router
+import { useRouter } from 'expo-router'; 
+import { useWebRTCContext } from '../../lib/WebRTCContext';
+import { FIXED_ROOM_ID } from '../../lib/config'; 
 
 
 const Home = () => {
     const router = useRouter();
     const [showQR, setShowQR] = useState(false); // Start with QR hidden
     const CALLEE_ID = 'user123';
-    const QR_URL = `https://call-web-five.vercel.app/#/room/shahid`;
+    const QR_URL = `https://call-web-five.vercel.app/#/room/${FIXED_ROOM_ID}`;
 
     const ActionButton = ({
                               label,

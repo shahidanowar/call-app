@@ -11,10 +11,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useWebRTCContext } from '../lib/WebRTCContext';
 import { useLocalSearchParams } from 'expo-router';
+import { FIXED_ROOM_ID } from '../lib/config';
 
 const WEB_LINK_PREFIX = 'https://call-web-five.vercel.app/#/room/';
-const FIXED_ROOM_ID = 'shahid';
-const ONGOING_CALL_ID = 'shahid';
 
 const Ongoing = () => {
   const router = useRouter();

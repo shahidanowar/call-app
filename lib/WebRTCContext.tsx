@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import useWebRTC from './useWebRTC';
 import { router, usePathname } from 'expo-router';
+import { FIXED_ROOM_ID } from './config';
 
 // Since useWebRTC is a JS file, we define the return type here
 export interface UseWebRTCReturn {
@@ -61,7 +62,7 @@ export function WebRTCProvider({ children }: { children: ReactNode }) {
   /** Join the single hard‑coded room once the socket is connected */
   const joinFixedRoom = () => {
     if (webrtc.isConnected) {
-      joinRoom("shahid");
+      joinRoom(FIXED_ROOM_ID);
     }
   };
 
