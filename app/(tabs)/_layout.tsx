@@ -9,8 +9,8 @@ export default function TabLayout() {
     // LOG OUT
     const handleLogout = async () => {
         try {
-            // remove all stored auth-related keys
-            await AsyncStorage.multiRemove(['token', 'user', 'authToken']);
+            // remove all stored auth-related keys and user data
+            await AsyncStorage.multiRemove(['token', 'user', 'authToken', 'userStats', 'qrGenerated']);
             router.replace('/login');
         } catch (error) {
             console.error('Logout error:', error);
@@ -35,9 +35,9 @@ export default function TabLayout() {
 
 
 
-    const getScreenOptions = (title, showLogo = false) => ({
+    const getScreenOptions = (title: string, showLogo = false) => ({
         title,
-        headerTitleAlign: 'left',
+        headerTitleAlign: 'left' as const,
         headerTintColor: '#018a91',
         headerRight: HeaderRight,
         headerBackground: HeaderBackground,
@@ -53,7 +53,7 @@ export default function TabLayout() {
             </View>
         ) : undefined,
         headerTitleStyle: !showLogo ? {
-            fontWeight: '600',
+            fontWeight: '600' as const,
             fontSize: 18,
             color: '#018a91',
         } : undefined,
@@ -90,12 +90,12 @@ export default function TabLayout() {
                     marginTop: 8,
                 },
                 tabBarIcon: ({ color, size, focused }) => {
-                    let iconName;
+                    let iconName: keyof typeof Ionicons.glyphMap = 'home';
 
                     if (route.name === 'home') {
                         iconName = focused ? 'home' : 'home-outline';
                     } else if (route.name === 'history') {
-                        iconName = focused ? 'time' : 'time-outline';
+                        iconName = focused ? 'car' : 'car-outline';
                     } else if (route.name === 'profile') {
                         iconName = focused ? 'person' : 'person-outline';
                     }
@@ -106,12 +106,12 @@ export default function TabLayout() {
         >
             <Tabs.Screen
                 name="home"
-                options={getScreenOptions(' QR Call', true)}
+                options={getScreenOptions(' Home', true)}
             />
 
             <Tabs.Screen
                 name="history"
-                options={getScreenOptions(' Call History', true)}
+                options={getScreenOptions(' Car Details', true)}
             />
 
             <Tabs.Screen

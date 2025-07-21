@@ -16,6 +16,7 @@ export interface UseWebRTCReturn {
   makeCall: () => Promise<void>;
   acceptCall: () => Promise<void>;
   lastOffer: any; // RTCSessionDescriptionInit from react-native-webrtc
+  callDuration: number;
 }
 
 /** Shape of the context value */
@@ -27,14 +28,49 @@ interface Ctx extends UseWebRTCReturn {
 const WebRTCContext = createContext<Ctx | null>(null);
 
 export function WebRTCProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const webrtc = useWebRTC({
     onPeerJoined: useCallback((peerId: string) => {
       console.log('[Context] Peer joined:', peerId);
       setPeerJoined(true);
     }, []),
-    onLeave: useCallback(() => {
+    onLeave: useCallback(async () => {
       console.log('[Context] Left room');
       setPeerJoined(false);
+
+      // Update stats when call ends
+      const duration = callDurationRef.current;
+      if (duration > 0) {
+        try {
+          const statsStr = await AsyncStorage.getItem('userStats');
+          let currentStats: any = JSON.parse(statsStr || '{}');
+
+          const newTotalCalls = (currentStats.totalCalls || 0) + 1;
+          const newTotalDuration = (currentStats.totalCallDurationSeconds || 0) + duration;
+          const newAvgSeconds = newTotalCalls > 0 ? newTotalDuration / newTotalCalls : 0;
+
+          const formatAvgDuration = (seconds: number) => {
+            if (isNaN(seconds) || seconds === 0) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.round(seconds % 60).toString().padStart(2, '0');
+            return `${mins}:${secs}`;
+          };
+
+          const updatedStats = {
+            ...currentStats,
+            totalCalls: newTotalCalls,
+            callsToday: (currentStats.callsToday || 0) + 1,
+            lastCallTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            totalCallDurationSeconds: newTotalDuration,
+            avgCallDuration: formatAvgDuration(newAvgSeconds)
+          };
+
+          await AsyncStorage.setItem('userStats', JSON.stringify(updatedStats));
+        } catch (error) {
+          console.error('Failed to update call stats onLeave:', error);
+        }
+      }
+
       if (router) {
         router.navigate('/(tabs)/home');
       }
@@ -52,7 +88,29 @@ export function WebRTCProvider({ children }: { children: ReactNode }) {
   });
   const [peerJoined, setPeerJoined] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const pathname = usePathname();
+  const [callDuration, setCallDuration] = useState(0);
+  const callDurationRef = React.useRef(callDuration);
+
+  useEffect(() => {
+    callDurationRef.current = callDuration;
+  }, [callDuration]);
+
+  // Timer for call duration
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    if (webrtc.remoteStream) {
+      // Start timer when a peer is connected
+      interval = setInterval(() => setCallDuration((prev) => prev + 1), 1000) as unknown as NodeJS.Timeout;
+    } else {
+      // Reset duration if call ends or was never started
+      setCallDuration(0);
+    }
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [webrtc.remoteStream]);
 
   useEffect(() => {
     const getUserId = async () => {
@@ -82,7 +140,7 @@ export function WebRTCProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value: Ctx = { ...webrtc, joinRoom, joinFixedRoom, peerJoined };
+  const value: Ctx = { ...webrtc, joinRoom, joinFixedRoom, peerJoined, callDuration };
 
   return (
     <WebRTCContext.Provider value={value}>

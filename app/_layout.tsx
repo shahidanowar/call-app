@@ -1,6 +1,6 @@
 import { Stack, router } from "expo-router";
 import './global.css';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { WebRTCProvider, useWebRTCContext } from '../lib/WebRTCContext';
 import { FIXED_ROOM_ID } from '../lib/config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,6 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 function AppLayout() {
   const { isConnected, joinRoom, peerJoined } = useWebRTCContext();
   const [userId, setUserId] = useState<string | null>(null);
+  const hasJoinedRoom = useRef(false);
 
   useEffect(() => {
     const getUserId = async () => {
@@ -25,8 +26,9 @@ function AppLayout() {
   }, []);
 
   useEffect(() => {
-    if (isConnected && userId) {
+    if (isConnected && userId && !hasJoinedRoom.current) {
       joinRoom(FIXED_ROOM_ID(userId));
+      hasJoinedRoom.current = true;
     }
   }, [isConnected, joinRoom, userId]);
 

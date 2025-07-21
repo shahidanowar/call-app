@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Pressable,
   StatusBar,
+  Animated,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -16,6 +17,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WEB_LINK_PREFIX = 'https://call-web-five.vercel.app/#/room/';
 
+
+
 const Ongoing = () => {
   const router = useRouter();
   const { 
@@ -24,7 +27,8 @@ const Ongoing = () => {
     hangupCall, 
     localStream, 
     remoteStream, 
-    lastOffer 
+    lastOffer,
+    callDuration
   } = useWebRTCContext();
   const [isMuted, setIsMuted] = useState(false);
   const [joined, setJoined] = useState(false);
@@ -33,7 +37,11 @@ const Ongoing = () => {
   const [roomId, setRoomId] = useState<string>('');
   const [roomLink, setRoomLink] = useState<string>('');
   const [full, setFull] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
+
+
+  // Animation values for halo effect
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
     const getUserId = async () => {
@@ -50,7 +58,41 @@ const Ongoing = () => {
         console.error('Failed to get user ID:', error);
       }
     };
+    
+    // Start pulse animation
+    const startPulseAnimation = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.parallel([
+            Animated.timing(pulseAnim, {
+              toValue: 1.2,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(opacityAnim, {
+              toValue: 0.1,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.parallel([
+            Animated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(opacityAnim, {
+              toValue: 0.3,
+              duration: 1000,
+              useNativeDriver: true,
+            }),
+          ]),
+        ])
+      ).start();
+    };
+    
     getUserId();
+    startPulseAnimation();
   }, []);
 
   useEffect(() => {
@@ -83,25 +125,10 @@ const Ongoing = () => {
   };
 
   const handleHangup = () => {
-    // initiate clean-up; onLeave callback above handles UI state
     hangupCall();
-    router.navigate('/home');
   };
 
-  // Call duration timer
-  useEffect(() => {
-    let interval: NodeJS.Timeout | undefined;
-    if (joined) {
-      interval = setInterval(() => setCallDuration((prev) => prev + 1), 1000) as unknown as NodeJS.Timeout;
-    } else {
-      setCallDuration(0);
-    }
-    return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [joined]);
+
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -117,9 +144,31 @@ const Ongoing = () => {
           <View className="flex-1 justify-center items-center">
             {joined ? (
               <>
-                <Image
-                  source={{uri: 'https://i.pravatar.cc/300'}}
-                  className="w-32 h-32 rounded-full mb-6"/>
+                <View className="relative mb-6">
+                  {/* Animated halo effect - no image, just gradient circle */}
+                  <Animated.View 
+                    className="w-36 h-36 rounded-full"
+                    style={{
+                      backgroundColor: '#667eea',
+                      opacity: opacityAnim,
+                      transform: [{ scale: pulseAnim }],
+                      shadowColor: '#667eea',
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: 0.8,
+                      shadowRadius: 20,
+                      elevation: 20,
+                    }}
+                  />
+                  {/* Inner gradient circle */}
+                  <View 
+                    className="absolute top-2 left-2 w-32 h-32 rounded-full"
+                    style={{
+                      backgroundColor: '#000000',
+                      borderWidth: 4,
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                    }}
+                  />
+                </View>
 
                 <Text className="text-white text-2xl font-bold mb-1">Caller</Text>
                 <Text className="text-gray-400 mb-10">Ongoing Call...</Text>

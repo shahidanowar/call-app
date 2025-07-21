@@ -12,21 +12,31 @@ const Home = () => {
     const router = useRouter();
     const [showQR, setShowQR] = useState(false); // Start with QR hidden
     const [qrUrl, setQrUrl] = useState<string>('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     useEffect(() => {
-        const getUserId = async () => {
+        const checkUserAndQrStatus = async () => {
             try {
                 const userStr = await AsyncStorage.getItem('user');
                 if (userStr) {
                     const user = JSON.parse(userStr);
                     const dynamicRoomId = FIXED_ROOM_ID(user.id);
                     setQrUrl(`https://visionai.site/#/${dynamicRoomId}`);
+                    setIsLoggedIn(true);
+
+                    // Check if QR has been generated before
+                    const qrGenerated = await AsyncStorage.getItem('qrGenerated');
+                    if (qrGenerated) {
+                        setShowQR(true);
+                    }
+                } else {
+                    setIsLoggedIn(false);
                 }
             } catch (error) {
-                console.error('Failed to get user ID:', error);
+                console.error('Failed to get user ID or QR status:', error);
             }
         };
-        getUserId();
+        checkUserAndQrStatus();
     }, []);
 
     const ActionButton = ({
@@ -57,64 +67,78 @@ const Home = () => {
             <View className="flex-1 bg-[#d5e0e0]">
                 <View className="flex-1 items-center mt-10 px-6 py-8">
 
-                    <View className="bg-white rounded-2xl p-6 pt-10 w-full max-w-sm items-center mb-6">
-                        {showQR ? (
-                            <>
-                                <View className="bg-white rounded-xl p-4 mb-4 relative">
+                    {isLoggedIn ? (
+                        <>
+                            <View className="bg-white rounded-2xl p-6 pt-10 w-full max-w-sm items-center mb-6">
+                                {showQR ? (
+                                    <>
+                                        <View className="bg-white rounded-xl p-4 mb-4 relative">
 
-                                    <QRCode
-                                        value={qrUrl}
-                                        size={200}
-                                        color="black"
-                                        backgroundColor="white"
-                                    />
-                                </View>
+                                            <QRCode
+                                                value={qrUrl}
+                                                size={200}
+                                                color="black"
+                                                backgroundColor="white"
+                                            />
+                                        </View>
 
 
-                            </>
-                        ) : (
-                            <View className="items-center py-16 mb-5">
-                                <Ionicons name="qr-code-outline" size={64} color="#6b7280" className="mb-4" />
-                                <Text className="text-gray-400 text-lg font-medium text-center">
-                                    Generate QR to view
-                                </Text>
+                                    </>
+                                ) : (
+                                    <View className="items-center py-16 mb-5">
+                                        <Ionicons name="qr-code-outline" size={64} color="#6b7280" className="mb-4" />
+                                        <Text className="text-gray-400 text-lg font-medium text-center">
+                                            Generate QR to view
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
-                        )}
-                    </View>
 
-                    {/* QR*/}
-                    <View className="flex-row justify-center w-full">
-                        {!showQR ? (
-                            <ActionButton
-                                label="Generate QR"
-                                onPress={() => setShowQR(true)}
-                                icon="qr-code"
-                                backgroundColor="bg-teal-600"
-                            />
-                        ) : (
-                            <>
-                                <ActionButton
-                                    label="Print QR"
-                                    onPress={() => {
-                                        router.push('../home');
-                                        console.log('Print clicked');
-                                    }}
-                                    icon="print"
-                                    backgroundColor="bg-gray-800"
-                                />
+                            {/* QR*/}
+                            <View className="flex-row justify-center w-full">
+                                {!showQR ? (
+                                    <ActionButton
+                                        label="Generate QR"
+                                        onPress={async () => {
+                                            setShowQR(true);
+                                            await AsyncStorage.setItem('qrGenerated', 'true');
+                                        }}
+                                        icon="qr-code"
+                                        backgroundColor="bg-teal-600"
+                                    />
+                                ) : (
+                                    <>
+                                        <ActionButton
+                                            label="Print QR"
+                                            onPress={() => {
+                                                router.push('../home');
+                                                console.log('Print clicked');
+                                            }}
+                                            icon="print"
+                                            backgroundColor="bg-gray-800"
+                                        />
 
-                                <ActionButton
-                                    label="Share QR"
-                                    onPress={() => {
-                                        router.push('../home');
-                                        console.log('Share clicked');
-                                    }}
-                                    icon="share"
-                                    backgroundColor="bg-gray-800"
-                                />
-                            </>
-                        )}
-                    </View>
+                                        <ActionButton
+                                            label="Share QR"
+                                            onPress={() => {
+                                                router.push('../home');
+                                                console.log('Share clicked');
+                                            }}
+                                            icon="share"
+                                            backgroundColor="bg-gray-800"
+                                        />
+                                    </>
+                                )}
+                            </View>
+                        </>
+                    ) : (
+                        <View className="items-center py-16 mb-5">
+                            <Ionicons name="log-in-outline" size={64} color="#6b7280" className="mb-4" />
+                            <Text className="text-gray-400 text-lg font-medium text-center">
+                                Please log in to generate a QR code.
+                            </Text>
+                        </View>
+                    )}
 
 
                 </View>
