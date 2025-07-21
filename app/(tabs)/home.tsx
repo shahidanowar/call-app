@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StatusBar, Image, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import ViewShot from 'react-native-view-shot';
+import * as FileSystem from 'expo-file-system';
 
 //-------------------------------------------------------------------------
 import { useRouter } from 'expo-router';
@@ -13,6 +17,7 @@ const Home = () => {
     const [showQR, setShowQR] = useState(false); // Start with QR hidden
     const [qrUrl, setQrUrl] = useState<string>('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const viewShotRef = useRef<ViewShot>(null);
 
     useEffect(() => {
         const checkUserAndQrStatus = async () => {
@@ -38,6 +43,41 @@ const Home = () => {
         };
         checkUserAndQrStatus();
     }, []);
+
+    const handleShare = async () => {
+        if (!viewShotRef.current?.capture) return;
+        try {
+            const uri = await viewShotRef.current.capture();
+            await Sharing.shareAsync(uri);
+        } catch (error) {
+            console.error('Error sharing QR code:', error);
+        }
+    };
+
+    const handlePrint = async () => {
+        if (!viewShotRef.current?.capture) return;
+        try {
+            const uri = await viewShotRef.current.capture();
+            const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+            const html = `
+                <html>
+                    <head>
+                        <style>
+                            @page { margin: 0; }
+                            body { margin: 0; display: flex; justify-content: center; align-items: center; }
+                            img { width: 80%; height: auto; object-fit: contain; }
+                        </style>
+                    </head>
+                    <body>
+                        <img src="data:image/png;base64,${base64}" />
+                    </body>
+                </html>
+            `;
+            await Print.printAsync({ html });
+        } catch (error) {
+            console.error('Error printing QR code:', error);
+        }
+    };
 
     const ActionButton = ({
                               label,
@@ -73,16 +113,20 @@ const Home = () => {
                                 {showQR ? (
                                     <>
                                         <View className="bg-white rounded-xl p-4 mb-4 relative">
-
-                                            <QRCode
-                                                value={qrUrl}
-                                                size={200}
-                                                color="black"
-                                                backgroundColor="white"
-                                            />
+                                            <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1.0 }}>
+                                                <View className="p-6 bg-white items-center">
+                                                    <Image source={require('../../assets/images/logo.png')} className="w-24 h-10 mb-4" resizeMode="contain" />
+                                                    <Text className="text-lg font-bold text-gray-800 mb-2">Scan to call me on Ringr</Text>
+                                                    <QRCode
+                                                        value={qrUrl}
+                                                        size={200}
+                                                        color="black"
+                                                        backgroundColor="white"
+                                                    />
+                                                    <Text className="text-sm text-gray-500 mt-4 text-center">Open your camera and point it at this code to start a audio call.</Text>
+                                                </View>
+                                            </ViewShot>
                                         </View>
-
-
                                     </>
                                 ) : (
                                     <View className="items-center py-16 mb-5">
@@ -110,20 +154,14 @@ const Home = () => {
                                     <>
                                         <ActionButton
                                             label="Print QR"
-                                            onPress={() => {
-                                                router.push('../home');
-                                                console.log('Print clicked');
-                                            }}
+                                            onPress={handlePrint}
                                             icon="print"
                                             backgroundColor="bg-gray-800"
                                         />
 
                                         <ActionButton
                                             label="Share QR"
-                                            onPress={() => {
-                                                router.push('../home');
-                                                console.log('Share clicked');
-                                            }}
+                                            onPress={handleShare}
                                             icon="share"
                                             backgroundColor="bg-gray-800"
                                         />
