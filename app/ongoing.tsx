@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useWebRTCContext } from '../lib/WebRTCContext';
 import { useLocalSearchParams } from 'expo-router';
 import { FIXED_ROOM_ID } from '../lib/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WEB_LINK_PREFIX = 'https://call-web-five.vercel.app/#/room/';
 
@@ -28,6 +29,29 @@ const Ongoing = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [joined, setJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [roomId, setRoomId] = useState<string>('');
+  const [roomLink, setRoomLink] = useState<string>('');
+  const [full, setFull] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
+
+  useEffect(() => {
+    const getUserId = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setUserId(user.id);
+          const dynamicRoomId = FIXED_ROOM_ID(user.id);
+          setRoomId(dynamicRoomId);
+          setRoomLink(`${WEB_LINK_PREFIX}${dynamicRoomId}`);
+        }
+      } catch (error) {
+        console.error('Failed to get user ID:', error);
+      }
+    };
+    getUserId();
+  }, []);
 
   useEffect(() => {
     if (remoteStream) {
@@ -58,17 +82,11 @@ const Ongoing = () => {
     });
   };
 
-  const [roomId, setRoomId] = useState<string>(FIXED_ROOM_ID);
-  const [roomLink, setRoomLink] = useState<string>(`${WEB_LINK_PREFIX}${FIXED_ROOM_ID}`);
-  const [full, setFull] = useState(false);
-
   const handleHangup = () => {
     // initiate clean-up; onLeave callback above handles UI state
     hangupCall();
     router.navigate('/home');
   };
-
-  const [callDuration, setCallDuration] = useState(0);
 
   // Call duration timer
   useEffect(() => {

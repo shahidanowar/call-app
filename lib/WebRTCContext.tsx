@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
 import useWebRTC from './useWebRTC';
 import { router, usePathname } from 'expo-router';
-import { FIXED_ROOM_ID } from './config';
+import { FIXED_ROOM_ID } from '../lib/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Since useWebRTC is a JS file, we define the return type here
 export interface UseWebRTCReturn {
@@ -26,9 +27,6 @@ interface Ctx extends UseWebRTCReturn {
 const WebRTCContext = createContext<Ctx | null>(null);
 
 export function WebRTCProvider({ children }: { children: ReactNode }) {
-  const [peerJoined, setPeerJoined] = useState(false);
-  const pathname = usePathname();
-
   const webrtc = useWebRTC({
     onPeerJoined: useCallback((peerId: string) => {
       console.log('[Context] Peer joined:', peerId);
@@ -52,6 +50,24 @@ export function WebRTCProvider({ children }: { children: ReactNode }) {
     onJoined: () => {},
     onIncoming: () => {},
   });
+  const [peerJoined, setPeerJoined] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const getUserId = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setUserId(user.id);
+        }
+      } catch (error) {
+        console.error('Failed to get user ID:', error);
+      }
+    };
+    getUserId();
+  }, []);
 
   const joinRoom = useCallback((roomId: string) => {
     if (webrtc.isConnected) {
@@ -61,8 +77,8 @@ export function WebRTCProvider({ children }: { children: ReactNode }) {
 
   /** Join the single hard‑coded room once the socket is connected */
   const joinFixedRoom = () => {
-    if (webrtc.isConnected) {
-      joinRoom(FIXED_ROOM_ID);
+    if (webrtc.isConnected && userId) {
+      joinRoom(FIXED_ROOM_ID(userId));
     }
   };
 

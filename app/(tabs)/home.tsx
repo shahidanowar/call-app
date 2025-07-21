@@ -4,16 +4,30 @@ import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 
 //-------------------------------------------------------------------------
-import { useRouter } from 'expo-router'; 
-import { useWebRTCContext } from '../../lib/WebRTCContext';
+import { useRouter } from 'expo-router';
 import { FIXED_ROOM_ID } from '../../lib/config'; 
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Home = () => {
     const router = useRouter();
     const [showQR, setShowQR] = useState(false); // Start with QR hidden
-    const CALLEE_ID = 'user123';
-    const QR_URL = `https://call-web-five.vercel.app/#/room/${FIXED_ROOM_ID}`;
+    const [qrUrl, setQrUrl] = useState<string>('');
+
+    useEffect(() => {
+        const getUserId = async () => {
+            try {
+                const userStr = await AsyncStorage.getItem('user');
+                if (userStr) {
+                    const user = JSON.parse(userStr);
+                    const dynamicRoomId = FIXED_ROOM_ID(user.id);
+                    setQrUrl(`https://visionai.site/#/${dynamicRoomId}`);
+                }
+            } catch (error) {
+                console.error('Failed to get user ID:', error);
+            }
+        };
+        getUserId();
+    }, []);
 
     const ActionButton = ({
                               label,
@@ -49,7 +63,7 @@ const Home = () => {
                                 <View className="bg-white rounded-xl p-4 mb-4 relative">
 
                                     <QRCode
-                                        value={QR_URL}
+                                        value={qrUrl}
                                         size={200}
                                         color="black"
                                         backgroundColor="white"

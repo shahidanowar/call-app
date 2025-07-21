@@ -1,18 +1,34 @@
 import { Stack, router } from "expo-router";
 import './global.css';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { WebRTCProvider, useWebRTCContext } from '../lib/WebRTCContext';
-
-const FIXED_ROOM_ID = 'shahid'; // Hard‑coded room ID so this screen always joins the same audio r
+import { FIXED_ROOM_ID } from '../lib/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function AppLayout() {
   const { isConnected, joinRoom, peerJoined } = useWebRTCContext();
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isConnected) {
-      joinRoom(FIXED_ROOM_ID);
+    const getUserId = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setUserId(user.id);
+        }
+      } catch (error) {
+        console.error('Failed to get user ID:', error);
+      }
+    };
+    getUserId();
+  }, []);
+
+  useEffect(() => {
+    if (isConnected && userId) {
+      joinRoom(FIXED_ROOM_ID(userId));
     }
-  }, [isConnected, joinRoom]);
+  }, [isConnected, joinRoom, userId]);
 
   useEffect(() => {
     if (peerJoined) {

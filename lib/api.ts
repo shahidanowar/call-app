@@ -1,4 +1,4 @@
-const API_URL = 'http://10.13.163.54:3000';  // Use your actual local IP and port
+const API_URL = 'https://visionai.site';  // Production server domain
 
 export async function login(email: string, password: string) {
     const res = await fetch(`${API_URL}/login`, {   // <-- CORRECT!
@@ -26,6 +26,6 @@ export async function register(name: string, email: string, password: string, av
 }
 
 export async function getProfile(id: string) {
-    const res = await fetch(`${API_URL}/(tabs)/profile/${id}`);
+    const res = await fetch(`${API_URL}/profile/${id}`);
     return await res.json();
 }
